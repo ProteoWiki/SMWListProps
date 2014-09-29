@@ -1,8 +1,8 @@
-= SMWListProps =
+# SMWListProps #
 
 Extension for printing out all the different properties associated to a wiki page.
 
-== Usage ==
+## Usage ##
 
 * {{#SMWListProps:FULLPAGENAME|wikionly}}
 
