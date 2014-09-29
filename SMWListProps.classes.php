@@ -95,8 +95,8 @@ class SMWListProps {
 	
 		$assignee_arr = array();
 	
+		// Ensure proper query
 		$query_word = str_replace(" ", "_", $query_word);
-		echo $title_text;
 		
 		// get the result of the query "[[$title]][[$query_word::+]]"
 		$properties_to_display = array();
