@@ -17,9 +17,6 @@ if ( !defined( 'SMW_VERSION' ) ) {
 class SMWListProps {
 	
 	public static function executeGetListProps( $parser, $frame, $args ) {
-
-		// Let's disable cache
-		$parser->disableCache();
 	
 		//Default current page
 		$pagetitle = $parser->getTitle();
@@ -54,15 +51,46 @@ class SMWListProps {
 		// Options 
 		$wikionly = false;
 		$values = false;
+		$sep = ",";
+		$sepvalues = "-";
+		$eqvalues = ":";
 	
 	
 		// If value in array
 		if ( in_array ( 'wikionly' , $params ) ) {
-			 $wikionly = true;	
+			$wikionly = true;
 		}
 		// If value in array
 		if ( in_array ( 'values' , $params ) ) {
-				 $values = true;	
+			$values = true;
+		}
+
+		// Detect array
+		$separr = preg_grep( "/^sep\=/", $params );
+		$sepvaluesarr = preg_grep( "/^sepvalues\=/", $params );
+		$eqvaluesarr = preg_grep( "/^eqvalues\=/", $params );
+
+		// We assume first match
+		if ( count( $separr ) > 0 ) {
+			$seppr = $separr[0];
+			$vals = explode( "=", $seppr, 2 );
+			if ( ! empty( $vals[1] ) ) {
+				$sep =  $vals[1];
+			}
+		}
+		if ( count( $sepvaluesarr ) > 0 ) {
+			$sepvaluespr = $sepvaluesarr[0];
+			$vals = explode( "=", $sepvaluespr, 2 );
+			if ( ! empty( $vals[1] ) ) {
+				$sepvalues =  $vals[1];
+			}
+		}
+		if ( count( $eqvaluesarr ) > 0 ) {
+			$eqvaluespr = $eqvaluesarr[0];
+			$vals = explode( "=", $eqvaluespr, 2 );
+			if ( ! empty( $vals[1] ) ) {
+				$eqvalues =  $vals[1];
+			}
 		}
 		
 		foreach ( $diProperties as $diProperty ) {
@@ -76,8 +104,16 @@ class SMWListProps {
 			if ( !empty($label)  ) {
 	
 				if ( $values == true ) {
-				   #$array = self::getPropValue( $pagetitle->getFullText(), $label );
-				   #var_dump($array);
+					$result = self::getPropValue( $pagetitle->getFullText(), $label );
+					
+					if ( is_array( $result ) ) {
+						$strarray = implode( $sepvalues, $result );
+					} else {
+						$strarray = $result;
+					}
+					
+					
+					$label = $label.$eqvalues.$strarray;
 				}
 			
 				array_push( $listprops, $label );
@@ -85,84 +121,23 @@ class SMWListProps {
 		}
 
 	
-		return( implode( ",", $listprops ) );
+		return( implode( $sep, $listprops ) );
 	
 	}
 
 	/** Convenient for getting value **/
 	
 	static function getPropValue ( $title_text, $query_word ) {
-	
-		$assignee_arr = array();
-	
+		
 		// Ensure proper query
 		$query_word = str_replace(" ", "_", $query_word);
 		
-		// get the result of the query "[[$title]][[$query_word::+]]"
-		$properties_to_display = array();
-		$properties_to_display[0] = $query_word;
-		$results = self::getQueryResults( "[[$title_text]][[$query_word::+]]", $properties_to_display, false );
-	
-		
-		// In theory, there is only one row
-		while ( $row = $results->getNext() ) {
-		   var_dump($row[1]->getNextObject());
-		}
-		
-	
-		return $assignee_arr;
+		// https://semantic-mediawiki.org/wiki/User:Yury_Katkov/programming_examples
+		$params = array ("[[$title_text]]", "?$query_word", "mainlabel=-", "headers=hide" );
+		$result = SMWQueryProcessor::getResultFromFunctionParams( $params, SMW_OUTPUT_WIKI );
+
+		return $result;
 	}
 
-
-	/**
-	* This function returns to results of a certain query
-	* Thank you Yaron Koren for advices concerning this code
-	* @param $query_string String : the query
-	* @param $properties_to_display array(String): array of property names to display
-	* @param $display_title Boolean : add the page title in the result
-	* @return TODO
-	*/
-	static function getQueryResults( $query_string, $properties_to_display, $display_title ) {
-		// We use the Semantic MediaWiki Processor
-		// $smwgIP is defined by Semantic MediaWiki, and we don't allow
-		// this file to be sourced unless Semantic MediaWiki is included.
-		global $smwgIP;
-		include_once( $smwgIP . "/includes/SMW_QueryProcessor.php" );
-
-		$params = array();
-		$inline = true;
-		$printlabel = "";
-		$printouts = array();
-
-		// add the page name to the printouts
-		if ( $display_title ) {
-			$to_push = new SMWPrintRequest( SMWPrintRequest::PRINT_THIS, $printlabel );
-			array_push( $printouts, $to_push );
-		}
-
-		// Push the properties to display in the printout array.
-		foreach ( $properties_to_display as $property ) {
-			if ( class_exists( 'SMWPropertyValue' ) ) { // SMW 1.4
-				$to_push = new SMWPrintRequest( SMWPrintRequest::PRINT_PROP, $printlabel, SMWPropertyValue::makeProperty( $property ) );
-			} else {
-				$to_push = new SMWPrintRequest( SMWPrintRequest::PRINT_PROP, $printlabel, Title::newFromText( $property, SMW_NS_PROPERTY ) );
-			}
-			array_push( $printouts, $to_push );
-		}
-
-		if ( version_compare( SMW_VERSION, '1.6.1', '>' ) ) {
-			SMWQueryProcessor::addThisPrintout( $printouts, $params );
-			$params = SMWQueryProcessor::getProcessedParams( $params, $printouts );
-			$format = null;
-		}
-		else {
-			$format = 'auto';
-		}
-		
-		$query = SMWQueryProcessor::createQuery( $query_string, $params, $inline, $format, $printouts );
-		$results = smwfGetStore()->getQueryResult( $query );
-
-		return $results;
-	}
 
 }
