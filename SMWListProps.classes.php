@@ -51,20 +51,24 @@ class SMWListProps {
 		// Options 
 		$wikionly = false;
 		$values = false;
+		$raw = false;
+		
 		$sep = ",";
 		$sepvalues = "-";
 		$eqvalues = ":";
 	
 	
-		// If value in array
+		// If value in arrays
 		if ( in_array ( 'wikionly' , $params ) ) {
 			$wikionly = true;
 		}
-		// If value in array
 		if ( in_array ( 'values' , $params ) ) {
 			$values = true;
 		}
-
+		if ( in_array ( 'raw' , $params ) ) {
+			$raw = true;
+		}
+		
 		// Detect array
 		$separr = preg_grep( "/^sep\=/", $params );
 		$sepvaluesarr = preg_grep( "/^sepvalues\=/", $params );
@@ -104,7 +108,7 @@ class SMWListProps {
 			if ( !empty($label)  ) {
 	
 				if ( $values == true ) {
-					$result = self::getPropValue( $pagetitle->getFullText(), $label );
+					$result = self::getPropValue( $pagetitle->getFullText(), $label, $raw );
 					
 					if ( is_array( $result ) ) {
 						$strarray = implode( $sepvalues, $result );
@@ -127,10 +131,13 @@ class SMWListProps {
 
 	/** Convenient for getting value **/
 	
-	static function getPropValue ( $title_text, $query_word ) {
+	static function getPropValue ( $title_text, $query_word, $raw = false ) {
 		
 		// Ensure proper query
 		$query_word = str_replace(" ", "_", $query_word);
+		if ( $raw ) {
+			$query_word = $query_word."#";
+		}
 		
 		// https://semantic-mediawiki.org/wiki/User:Yury_Katkov/programming_examples
 		$params = array ("[[$title_text]]", "?$query_word", "mainlabel=-", "headers=hide" );
