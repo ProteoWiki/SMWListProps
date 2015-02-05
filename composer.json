@@ -21,6 +21,7 @@
 		"mediawiki/semantic-media-wiki": ">=2.0"
 	},
 	"autoload": {
-		"files": ["SMWListProps.php"]
+		"files": ["SMWListProps.php"],
+		"classmap": ["SMWListProps.classes.php"]
 	}
 }
